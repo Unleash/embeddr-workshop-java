@@ -1,0 +1,3 @@
+[mcp_servers.unleash]
+url = "__UNLEASH_URL__/api/admin/mcp"
+http_headers = { "Authorization" = "Bearer __UNLEASH_PAT__" }

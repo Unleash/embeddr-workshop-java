@@ -1,0 +1,6 @@
+build/
+.gradle/
+web/dist/
+web/node_modules/
+.env
+.git/

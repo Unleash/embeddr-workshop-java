@@ -1,0 +1,189 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '4.1.2'
+    id 'io.spring.dependency-management' version '1.1.7'
+    id 'com.github.node-gradle.node' version '7.1.0'
+}
+
+group = 'io.getunleash'
+version = '1.0.0'
+description = 'Embeddr, dating for AI agents. A workshop app for runtime control with Unleash.'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-webmvc'
+    implementation 'io.getunleash:unleash-client-java:12.3.1'
+    testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+// ---------------------------------------------------------------------------
+// Frontend. Gradle downloads its own Node, so a JDK is the only prerequisite.
+// `./gradlew web` builds web/ into web/dist; the running app serves it from
+// there, so rebuilding while the app runs is enough to see frontend changes.
+// Behind a proxy that blocks nodejs.org, point `distBaseUrl` at a mirror.
+// ---------------------------------------------------------------------------
+node {
+    download = true
+    version = '22.23.4'
+    nodeProjectDir = file('web')
+}
+
+def web = tasks.register('web', com.github.gradle.node.npm.task.NpmTask) {
+    group = 'embeddr'
+    description = 'Builds the frontend into web/dist.'
+    dependsOn tasks.named('npmInstall')
+    args = ['run', 'build']
+    inputs.files('web/index.html', 'web/vite.config.js', 'web/package.json')
+    inputs.dir('web/src')
+    inputs.dir('web/public')
+    outputs.dir('web/dist')
+}
+
+// The jar carries the frontend, so one process serves API and UI in production.
+tasks.named('processResources') {
+    from(web) { into 'static' }
+}
+
+// ---------------------------------------------------------------------------
+// Local configuration. .env holds the Unleash connection for this machine;
+// bootRun passes it to the app as environment variables, exactly like a
+// deployment platform would.
+// ---------------------------------------------------------------------------
+def dotenv() {
+    def envFile = file('.env')
+    def vars = [:]
+    if (!envFile.exists()) return vars
+    envFile.eachLine { line ->
+        def entry = line.trim()
+        if (entry.isEmpty() || entry.startsWith('#') || !entry.contains('=')) return
+        def split = entry.indexOf('=')
+        def key = entry.substring(0, split).trim()
+        def value = entry.substring(split + 1).trim()
+        if (value.length() >= 2 && ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'")))) {
+            value = value.substring(1, value.length() - 1)
+        }
+        vars[key] = value
+    }
+    return vars
+}
+
+tasks.named('bootRun') {
+    group = 'embeddr'
+    description = 'Builds the frontend and runs Embeddr on http://localhost:8080 with the values from .env.'
+    dependsOn web
+    environment(dotenv())
+}
+
+// Renders the MCP config for every supported assistant from the templates in
+// tooling/assistants, so the PAT is typed once, in .env.
+def assistantConfigs = [
+    'claude.mcp.json'     : '.mcp.json',
+    'cursor.mcp.json'     : '.cursor/mcp.json',
+    'vscode.mcp.json'     : '.vscode/mcp.json',
+    'opencode.json'       : 'opencode.json',
+    'codex.config.toml'   : '.codex/config.toml',
+    'gemini.settings.json': '.gemini/settings.json',
+]
+
+tasks.register('configure') {
+    group = 'embeddr'
+    description = 'Writes the assistant MCP configs from the values in .env.'
+    def root = layout.projectDirectory
+    doLast {
+        def env = dotenv()
+        def url = (env.UNLEASH_URL ?: '').replaceAll('/+$', '').replaceAll('/api$', '')
+        def pat = env.UNLEASH_PAT ?: ''
+        if (url.isEmpty() || pat.isEmpty()) {
+            throw new GradleException('Fill in UNLEASH_URL and UNLEASH_PAT in .env first. Copy .env.example to .env if you have not yet.')
+        }
+        assistantConfigs.each { template, target ->
+            def out = root.file(target).asFile
+            out.parentFile.mkdirs()
+            out.text = root.file("tooling/assistants/${template}").asFile.text
+                .replace('__UNLEASH_URL__', url)
+                .replace('__UNLEASH_PAT__', pat)
+            println "wrote ${target}"
+        }
+        println 'Restart your assistant so it picks up the config.'
+    }
+}
+
+// Everything an attendee needs to know before the workshop starts: the
+// toolchain builds, the frontend builds, .env is filled in, and both tokens
+// are accepted by the instance. Run it on the venue wifi, or better, at home.
+tasks.register('precheck') {
+    group = 'embeddr'
+    description = 'Checks the toolchain, .env and the Unleash connection.'
+    dependsOn 'classes', web
+    def root = layout.projectDirectory
+    doLast {
+        def problems = []
+        println "ok   JDK ${System.getProperty('java.version')} runs Gradle; the app compiles with the JDK 21 toolchain"
+        println 'ok   frontend built into web/dist'
+
+        if (!root.file('.env').asFile.exists()) {
+            problems << '.env is missing. Copy .env.example to .env and fill it in.'
+        } else {
+            def env = dotenv()
+            def url = (env.UNLEASH_URL ?: '').replaceAll('/+$', '').replaceAll('/api$', '')
+            def token = env.UNLEASH_BACKEND_TOKEN ?: ''
+            def pat = env.UNLEASH_PAT ?: ''
+            def suffix = env.UNLEASH_FLAG_SUFFIX ?: ''
+            ['UNLEASH_URL': url, 'UNLEASH_BACKEND_TOKEN': token, 'UNLEASH_FLAG_SUFFIX': suffix, 'UNLEASH_PAT': pat].each { key, value ->
+                if (value.isEmpty()) problems << "${key} is empty in .env"
+            }
+            if (!suffix.isEmpty() && !(suffix ==~ /[a-z0-9][a-z0-9._-]*/)) {
+                problems << "UNLEASH_FLAG_SUFFIX '${suffix}' is not a valid flag name part. Use your project id: lowercase letters, digits, dots, dashes."
+            }
+            def project = token.contains(':') ? token.substring(0, token.indexOf(':')) : ''
+            if (!suffix.isEmpty() && !project.isEmpty() && project != '*' && project != suffix) {
+                problems << "UNLEASH_FLAG_SUFFIX is '${suffix}' but the backend token belongs to project '${project}'. They should match."
+            }
+            if (!url.isEmpty() && !token.isEmpty()) {
+                def status = httpStatus("${url}/api/client/features", token)
+                if (status == 200) println "ok   backend token accepted by ${url} (project ${project})"
+                else problems << "backend token rejected by ${url}/api/client/features (HTTP ${status}). Check UNLEASH_URL and UNLEASH_BACKEND_TOKEN."
+            }
+            if (!url.isEmpty() && !pat.isEmpty()) {
+                def status = httpStatus("${url}/api/admin/user", pat)
+                if (status == 200) println "ok   personal access token accepted; the MCP endpoint is ${url}/api/admin/mcp"
+                else problems << "personal access token rejected by ${url}/api/admin/user (HTTP ${status}). It must start with user:"
+            }
+        }
+
+        if (problems.isEmpty()) {
+            println 'All checks passed. Next: ./gradlew configure, then ./gradlew bootRun'
+        } else {
+            problems.each { println "FAIL ${it}" }
+            throw new GradleException("${problems.size()} check(s) failed, see above")
+        }
+    }
+}
+
+def httpStatus(String url, String authorization) {
+    try {
+        def client = java.net.http.HttpClient.newBuilder()
+            .connectTimeout(java.time.Duration.ofSeconds(10)).build()
+        def request = java.net.http.HttpRequest.newBuilder(URI.create(url))
+            .header('Authorization', authorization)
+            .timeout(java.time.Duration.ofSeconds(15)).GET().build()
+        return client.send(request, java.net.http.HttpResponse.BodyHandlers.discarding()).statusCode()
+    } catch (Exception e) {
+        println "     could not reach ${url}: ${e.message}"
+        return -1
+    }
+}

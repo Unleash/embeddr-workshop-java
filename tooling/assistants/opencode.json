@@ -1,0 +1,13 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "unleash": {
+      "type": "remote",
+      "url": "__UNLEASH_URL__/api/admin/mcp",
+      "enabled": true,
+      "headers": {
+        "Authorization": "Bearer __UNLEASH_PAT__"
+      }
+    }
+  }
+}

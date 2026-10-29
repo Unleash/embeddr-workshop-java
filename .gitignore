@@ -1,0 +1,23 @@
+# Build output
+/build/
+/.gradle/
+/web/dist/
+/web/node_modules/
+
+# Local configuration, holds tokens
+/.env
+
+# Assistant configs are rendered from tooling/assistants by ./gradlew configure
+# and hold your personal access token
+/.mcp.json
+/.cursor/mcp.json
+/.vscode/mcp.json
+/opencode.json
+/.codex/config.toml
+/.gemini/settings.json
+
+# IDEs and OS noise
+.idea/
+*.iml
+.DS_Store
+.claude/
