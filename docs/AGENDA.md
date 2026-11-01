@@ -45,11 +45,13 @@ demo.
 
 ### Hosted app
 
-- Deploy this repo with the part 2 line already wired, against the
-  `embeddr-demo` project with an empty `UNLEASH_FLAG_SUFFIX`, and a low
-  `UNLEASH_METRICS_INTERVAL_SECONDS`.
+- The room moments run on the existing deployment of the Node edition,
+  `embeddr-workshop`, against the `embeddr-demo` project. It has the same
+  flags, endpoints and frontend as this repo, so what the room sees on
+  their phones matches what attendees build locally. Nothing from this
+  repo needs deploying; the `Dockerfile` here is optional.
 - The QR in `web/public/qr.png` and the join text in `AvatarQr.jsx` point at
-  the hosted URL. Update both if the URL changes.
+  that hosted URL. Update both if it changes.
 
 ### Attendee pre-check
 

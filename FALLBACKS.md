@@ -5,10 +5,8 @@ assistant misbehaves, run the matching command with curl and rejoin at the
 next checkpoint. Every checkpoint is verified in the Unleash UI, so it does
 not matter whether an assistant or a command got you there.
 
-The create, strategy, on and off commands were verified on 2026-07-03
-against a hosted Unleash Enterprise instance, version 8.0.4, during the
-Node edition of this workshop. The targeted strategy and the variants
-command are new in this edition and are marked as such.
+Every command on this page was verified on 2026-11-01 against the workshop
+instance, a hosted Unleash Enterprise version 8.3.1+27403.4298c9ee05, in a scratch project.
 
 ## Before you start
 
@@ -80,7 +78,7 @@ curl -s -X POST "$UNLEASH_URL/api/admin/projects/$PROJECT_ID/features/$FLAG/envi
 ## Add a strategy that targets one user id (part 2)
 
 Same as above, with a constraint on `userId`. Set `INVITE_CODE` to the
-code you typed in the app. Not yet verified against the workshop instance.
+code you typed in the app. Expected response: `200`.
 
 ```bash
 export INVITE_CODE="melinda"
@@ -93,8 +91,8 @@ curl -s -X POST "$UNLEASH_URL/api/admin/projects/$PROJECT_ID/features/$FLAG/envi
 
 ## Add a strategy with list and deck variants (part 4)
 
-A gradual rollout at 100 percent whose variants split sessions 50/50. Not
-yet verified against the workshop instance.
+A gradual rollout at 100 percent whose variants split sessions 50/50.
+Expected response: `200`.
 
 ```bash
 curl -s -X POST "$UNLEASH_URL/api/admin/projects/$PROJECT_ID/features/$FLAG/environments/development/strategies" \
