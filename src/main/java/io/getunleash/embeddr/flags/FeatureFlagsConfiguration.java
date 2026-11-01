@@ -24,11 +24,6 @@ class FeatureFlagsConfiguration {
                     + "Copy .env.example to .env and fill in your instance details.");
             return new OfflineFeatureFlags();
         }
-        if (settings.flagSuffix().isBlank()) {
-            log.warn("UNLEASH_FLAG_SUFFIX is not set. Flags are evaluated under their short names, "
-                    + "which only works in a project that owns them, like the hosted demo.");
-        }
-        return UnleashFeatureFlags.connect(
-                settings.url(), settings.backendToken(), settings.flagSuffix(), settings.metricsIntervalSeconds());
+        return UnleashFeatureFlags.connect(settings.url(), settings.backendToken(), settings.metricsIntervalSeconds());
     }
 }

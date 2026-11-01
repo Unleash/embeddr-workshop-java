@@ -7,13 +7,14 @@ control with Unleash and an AI assistant.
 ## Project structure
 
 - `src/main/java/io/getunleash/embeddr/flags/`: the only Unleash integration
-  point. `FeatureFlags` is the interface (`isEnabled`, `variant`,
-  `increment`), `Visitor` is the context (session id, optional user id),
-  `UnleashFeatureFlags` talks to the SDK, `OfflineFeatureFlags` is used when
-  no connection is configured.
+  point. `Flags` and `Metrics` hold the names, `FeatureFlags` is the
+  interface (`isEnabled`, `variant`, `increment`), `Visitor` is the context
+  (session id, optional user id), `UnleashFeatureFlags` talks to the SDK,
+  `OfflineFeatureFlags` is used when no connection is configured.
 - `src/main/java/io/getunleash/embeddr/api/`: one controller per endpoint.
   Request and response bodies are records nested in the controller.
 - `src/main/java/io/getunleash/embeddr/content/`: canned content banks.
+- `src/main/java/io/getunleash/embeddr/payment/`: the payment provider.
 - `web/src/App.jsx`: page layout (Header, Hero, MatchGrid, footer).
 - `web/src/components/`: all UI components, one component per file.
 - `web/src/lib/api.js`: the backend client. Generates the per-browser
@@ -27,43 +28,56 @@ control with Unleash and an AI assistant.
   and no token. It asks the backend what to show (see `web/src/lib/api.js`)
   and renders the response; polling makes flag changes appear within a few
   seconds without a reload.
-- To gate a feature: inject `FeatureFlags` into a controller, call
-  `flags.isEnabled("flag-name", new Visitor(sessionId, userId))`, and return
-  the feature data or null. The frontend renders what it receives and
+- To gate a feature: add the flag's name to `Flags`, inject `FeatureFlags`
+  into a controller, call
+  `flags.isEnabled(Flags.THE_FLAG, new Visitor(sessionId, userId))`, and
+  return the feature data or null. The frontend renders what it receives and
   renders nothing when the field is null.
 - Never import `io.getunleash.*` outside the `flags` package. Controllers
   depend on the `FeatureFlags` interface, which is what makes them testable
   with `StubFeatureFlags` in the tests.
-- Naming: the code uses short kebab-case names like `premium-upsell`. The
-  wrapper appends `-<suffix>` with `UNLEASH_FLAG_SUFFIX` from `.env`, which
-  is the attendee's Unleash project id, because flag names are unique across
-  the shared instance. So: write `premium-upsell` in Java, and create the
-  flag in Unleash as `premium-upsell-<suffix>` in the project whose id equals
-  the suffix. Never put the suffix in Java code.
+- Naming: every flag name lives in `flags/Flags.java` and every impact
+  metric name in `flags/Metrics.java`, as constants spelled exactly as in
+  Unleash. Flag names are unique across the
+  shared workshop instance, so a new flag is named with the attendee's
+  project id, `premium-upsell-<project id>`, created under that name in
+  Unleash and added to `Flags.java` under that exact name. Nothing in the
+  code adds to or rewrites a name.
 - Every change in this repo runs through the Unleash MCP server, not the
   Unleash API or UI. Start with `evaluate_change` for a risk read, reuse any
   flag `detect_flag` surfaces, create new ones with `create_flag`, and guard
   code with `wrap_change`. Retire flags with `cleanup_flag`.
 - New user-facing features ship behind a `release` flag, off by default.
-  Kill switches for dependencies are `operational` flags, off by default,
+  Kill switches for dependencies are `kill-switch` flags, off by default,
   where on means "bypass the dependency".
 - Communicate the tool trail: in the final report, name each Unleash MCP
   tool that was called and what it did.
 
 ## Payment provider
 
-- `PaymentController` is Embeddr's payment provider, and it is down on
-  purpose. POST `/payment` takes a `sessionId`, waits about a second, and
-  returns a 502. The malfunction is part of the workshop script, so never
-  fix it, stub a success path, or route around it inside that controller.
+- `payment/PaymentProvider.java` is Embeddr's payment provider, and it is
+  down on purpose: `charge(sessionId)` waits about a second and returns a
+  receipt with `charged` false. `PaymentController` exposes it as
+  POST `/payment`, answering 502. The malfunction is part of the workshop
+  script, so never fix it, stub a success path, or route around it inside
+  the provider or its controller.
 - Embeddr Premium is intentionally absent from this codebase. It gets built
-  live during the workshop, behind a release flag, with its upgrade flow
-  charging through POST `/payment`. A kill switch for the provider, when
-  asked for, lives in the code that calls the provider, not in the provider.
+  live during the workshop, behind a release flag. Its upgrade flow is a new
+  endpoint that injects `PaymentProvider` and calls `charge`; it does not
+  go over HTTP to `/payment`.
+- A kill switch for the provider, when asked for, is a `kill-switch` flag
+  checked in that upgrade endpoint, before `charge` is called. On means
+  "bypass the provider": the request goes to an in-memory queue for follow
+  up and the user gets a friendly answer. No new dependencies for the
+  queue; a `ConcurrentLinkedQueue` in the controller is enough.
+- The frontend's `post()` in `web/src/lib/api.js` returns null for any
+  non-2xx response. An upgrade endpoint should therefore answer 200 with a
+  `status` field, for example `charged`, `queued` or `failed`, so the
+  component can tell the three cases apart and show the right copy.
 
 ## Conventions
 
-- Java 21, Spring Boot, constructor injection, records for request and
+- Java 17 language level, Spring Boot, constructor injection, records for request and
   response bodies. No Lombok, no extra starters, no new dependencies.
 - Keep controllers small: validate the session id with
   `Requests.requireSessionId`, ask the wrapper, return a record.
@@ -90,8 +104,9 @@ Predictability beats thoroughness.
 - Create flags off and leave them off. The attendee does the flip. Never
   enable an environment, add a strategy, or toggle anything unless the
   attendee explicitly asks for that step.
-- The project id is the value of `UNLEASH_FLAG_SUFFIX` in `.env`. Pass it as
-  `projectId` on every MCP call. Do not stop to ask which project to use.
+- The project id is the part before the colon in `UNLEASH_BACKEND_TOKEN` in
+  `.env`. Pass it as `projectId` on every MCP call. Do not stop to ask which
+  project to use.
 - No screenshots, no installing tooling, no formatters. Match the style of
   the file you are editing.
 - Smallest set of files. Verification is the attendee's job: when confident

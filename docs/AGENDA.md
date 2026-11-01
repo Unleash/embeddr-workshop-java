@@ -1,7 +1,8 @@
 # Run of show: Runtime Control with AI, Java edition
 
 Three hours. The arc goes from one person with a flag to a system that
-protects itself, and ends on governance. Every hands-on block has the same
+protects itself, and ends on governance. Everything before the break is
+Unleash UI and a few lines of Java; the assistant joins after it. Every hands-on block has the same
 rhythm: a short room moment on the hosted app with phones out, then
 everyone builds the same thing in their own project against their local
 app, then a checkpoint in the workbook.
@@ -10,12 +11,12 @@ app, then a checkpoint in the workbook.
 |------|-------|------|-----|----------|
 | 0:00 | Open: early access. Room scans the QR, lands on the waitlist, types a code. Enable the flag for yourself in production, target one person's code, roll out in slices and check in with the room as phones pop through the door. | Presenter | 15 | |
 | 0:15 | The arc. One person with a flag, a system that protects itself, governance. Light mode as the one-liner: the flag gates the control, not the state. | Presenter | 5 | |
-| 0:20 | Setup: tokens, `.env`, `precheck`, `configure`, `bootRun`. | Hands-on | 20 | Part 1 |
-| 0:40 | First flag by hand: wire `early-access`, let yourself in by user id. | Hands-on | 15 | Part 2 |
-| 0:55 | AI killswitch: the assistant builds Premium plus the payment kill switch. Release, break, rescue, kill. | Hands-on | 35 | Part 3 |
-| 1:30 | Break | | 10 | |
-| 1:40 | Experiment. Room moment: everyone taps Match on the hosted app and the two counters diverge. Then each attendee runs the experiment in their project. | Hands-on | 25 | Part 4 |
-| 2:05 | Safeguard. Room moment: everyone taps Ick, the safeguard trips, the flag turns itself off. Then each attendee trips their own. | Hands-on | 25 | Part 5 |
+| 0:20 | Setup, UI only: register, install, clone, `precheck`, then `.env` with instance URL and backend token, `bootRun`. No assistant yet. | Hands-on | 25 | Parts 0 and 1 |
+| 0:45 | First flag by hand: wire `early-access`, let yourself in by user id. | Hands-on | 15 | Part 2 |
+| 1:00 | Experiment. Room moment: everyone taps Match on the hosted app and the two counters diverge. Then each attendee runs the experiment in their project. | Hands-on | 25 | Part 3 |
+| 1:25 | Break | | 10 | |
+| 1:35 | Connect the assistant (PAT, `configure`), then AI killswitch: it builds Premium plus the payment kill switch. Release, break, rescue, kill. | Hands-on | 35 | Part 4 |
+| 2:10 | Safeguard. Room moment: everyone taps Ick, the safeguard trips, the flag turns itself off. Then each attendee trips their own. | Hands-on | 20 | Part 5 |
 | 2:30 | Governance. Pairs approve each other's change request for light mode. | Hands-on | 15 | Part 6 |
 | 2:45 | Retire Premium. Lifecycle, cleanup, the assistant removes the flag, archive. | Hands-on | 10 | Part 7 |
 | 2:55 | Close. What they built, where to go next. | Presenter | 5 | |
@@ -28,9 +29,10 @@ demo.
 ### Unleash instance
 
 - One project per attendee, named first name and last initial, with the
-  attendee invited as a member. The project id becomes their flag suffix.
-- Optional: pre-create each attendee's development backend token and put it
-  in the invitation. The personal access token stays self-service.
+  attendee invited as a member. Attendees put the project id in every flag
+  name they create, since names are unique across the instance.
+- Projects are created on the day from the registration form responses, so
+  keep the form open on a second screen during part 0.
 - Change requests enabled on the `development` environment of every
   attendee project, one approval required, for part 6. Attendees cannot
   approve their own requests, so pair them and give each attendee a role in
@@ -53,12 +55,15 @@ demo.
 - The QR in `web/public/qr.png` and the join text in `AvatarQr.jsx` point at
   that hosted URL. Update both if it changes.
 
-### Attendee pre-check
+### The first twenty minutes
 
-Put in the invitation: git, a JDK 17 or newer, an MCP-capable assistant,
-and the three lines from workbook part 0. The pre-check downloads Gradle,
-the JDK 21 toolchain, Node and the frontend dependencies, so the venue
-wifi only has to carry flag fetches on the day.
+Nothing happens before the day. Attendees register through the form at the
+start of part 0, and someone creates their project and sends the invitation
+while they install a JDK, clone and run the pre-check, which downloads
+Gradle, Node and the frontend dependencies over the venue wifi. Budget for
+that: the setup block is 25 minutes, and the first flag block can start
+while the slowest downloads finish. Have the README's proxy section and
+"turn the VPN off" ready as the first answer to a failed download.
 
 ### Room
 

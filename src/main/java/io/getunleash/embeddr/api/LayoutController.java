@@ -1,6 +1,7 @@
 package io.getunleash.embeddr.api;
 
 import io.getunleash.embeddr.flags.FeatureFlags;
+import io.getunleash.embeddr.flags.Flags;
 import io.getunleash.embeddr.flags.Visitor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,6 +29,6 @@ class LayoutController {
     LayoutResponse layout(@RequestBody LayoutRequest request) {
         String sessionId = Requests.requireSessionId(request.sessionId());
         Visitor visitor = new Visitor(sessionId, request.userId());
-        return new LayoutResponse(flags.variant("match-layout-experiment", visitor).orElse(null));
+        return new LayoutResponse(flags.variant(Flags.MATCH_LAYOUT_EXPERIMENT, visitor).orElse(null));
     }
 }

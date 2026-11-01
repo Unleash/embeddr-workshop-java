@@ -23,12 +23,6 @@ import org.slf4j.LoggerFactory;
  * flip shows up in the app within one fetch interval. Metrics, including the
  * impact metrics behind safeguards, are batched and sent on their own
  * interval.
- *
- * <p>Naming: flag names are unique across a whole Unleash instance, and the
- * workshop instance hosts one project per attendee. The code uses short
- * names like {@code early-access}; this class appends the configured suffix,
- * so project {@code melinda-f} evaluates {@code early-access-melinda-f}.
- * Impact metrics get the same suffix with underscores.
  */
 public final class UnleashFeatureFlags implements FeatureFlags {
 
@@ -38,21 +32,17 @@ public final class UnleashFeatureFlags implements FeatureFlags {
     private static final int FETCH_INTERVAL_SECONDS = 5;
 
     private final Unleash unleash;
-    private final String flagSuffix;
-    private final String metricSuffix;
     private final Set<String> definedCounters = ConcurrentHashMap.newKeySet();
 
-    UnleashFeatureFlags(Unleash unleash, String suffix) {
+    UnleashFeatureFlags(Unleash unleash) {
         this.unleash = unleash;
-        this.flagSuffix = suffix.isBlank() ? "" : "-" + suffix.trim();
-        this.metricSuffix = suffix.isBlank() ? "" : "_" + suffix.trim().replace('-', '_');
     }
 
     /** Connects to an instance. {@code url} is the instance root, without /api. */
-    static UnleashFeatureFlags connect(String url, String backendToken, String suffix, int metricsIntervalSeconds) {
+    static UnleashFeatureFlags connect(String url, String backendToken, int metricsIntervalSeconds) {
         String api = url.replaceAll("/+$", "") + "/api";
         UnleashConfig config = UnleashConfig.builder()
-                .appName(suffix.isBlank() ? "embeddr" : "embeddr-" + suffix.trim())
+                .appName("embeddr")
                 .unleashAPI(api)
                 .apiKey(backendToken)
                 .fetchTogglesInterval(FETCH_INTERVAL_SECONDS)
@@ -60,7 +50,7 @@ public final class UnleashFeatureFlags implements FeatureFlags {
                 .subscriber(new UnleashSubscriber() {
                     @Override
                     public void onReady(UnleashReady ready) {
-                        log.info("flags: synchronized with {} (flag suffix \"{}\")", api, suffix);
+                        log.info("flags: synchronized with {}", api);
                     }
 
                     @Override
@@ -69,37 +59,26 @@ public final class UnleashFeatureFlags implements FeatureFlags {
                     }
                 })
                 .build();
-        return new UnleashFeatureFlags(new DefaultUnleash(config), suffix);
+        return new UnleashFeatureFlags(new DefaultUnleash(config));
     }
 
     @Override
     public boolean isEnabled(String flag, Visitor visitor) {
-        return unleash.isEnabled(flagName(flag), context(visitor));
+        return unleash.isEnabled(flag, context(visitor));
     }
 
     @Override
     public Optional<String> variant(String flag, Visitor visitor) {
-        Variant variant = unleash.getVariant(flagName(flag), context(visitor));
+        Variant variant = unleash.getVariant(flag, context(visitor));
         return variant.isEnabled() ? Optional.of(variant.getName()) : Optional.empty();
     }
 
     @Override
     public void increment(String metric) {
-        String name = metricName(metric);
-        if (definedCounters.add(name)) {
-            unleash.getImpactMetrics().defineCounter(name, metric.replace('_', ' '));
+        if (definedCounters.add(metric)) {
+            unleash.getImpactMetrics().defineCounter(metric, metric.replace('_', ' '));
         }
-        unleash.getImpactMetrics().incrementCounter(name);
-    }
-
-    /** {@code early-access} becomes {@code early-access-melinda-f}. A name that already ends in the suffix is left alone. */
-    String flagName(String flag) {
-        return flagSuffix.isEmpty() || flag.endsWith(flagSuffix) ? flag : flag + flagSuffix;
-    }
-
-    /** {@code thumbs_down_count} becomes {@code thumbs_down_count_melinda_f}. */
-    String metricName(String metric) {
-        return metricSuffix.isEmpty() || metric.endsWith(metricSuffix) ? metric : metric + metricSuffix;
+        unleash.getImpactMetrics().incrementCounter(metric);
     }
 
     private static UnleashContext context(Visitor visitor) {

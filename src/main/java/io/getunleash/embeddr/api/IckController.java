@@ -1,6 +1,7 @@
 package io.getunleash.embeddr.api;
 
 import io.getunleash.embeddr.flags.FeatureFlags;
+import io.getunleash.embeddr.flags.Metrics;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.slf4j.Logger;
@@ -36,7 +37,7 @@ class IckController {
     IckResponse ick(@RequestBody IckRequest request) {
         String sessionId = Requests.requireSessionId(request.sessionId());
         int count = taps.merge(sessionId, 1, Integer::sum);
-        flags.increment("thumbs_down_count");
+        flags.increment(Metrics.THUMBS_DOWN_COUNT);
         log.info("ick recorded: session {} has {} tap(s)", sessionId, count);
         return new IckResponse(true);
     }

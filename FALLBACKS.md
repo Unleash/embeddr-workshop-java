@@ -11,7 +11,7 @@ instance, a hosted Unleash Enterprise version 8.3.1+27403.4298c9ee05, in a scrat
 ## Before you start
 
 The commands use shell variables. Set them once per terminal session; the
-first three are the same values as in your `.env`:
+first two are the same values as in your `.env`:
 
 ```bash
 export UNLEASH_URL="https://the-workshop-instance.example.com"
@@ -20,7 +20,7 @@ export PROJECT_ID="your-project-id"
 export FLAG="premium-upsell-$PROJECT_ID"
 ```
 
-On Windows, run these in Git Bash, which comes with git.
+On Windows, run everything on this page in Git Bash, which comes with Git for Windows. PowerShell quotes JSON differently, so these commands do not work there as written.
 
 No curl on your machine? The Unleash documentation ships an interactive
 [API reference](https://docs.getunleash.io/reference/api/unleash) where you
@@ -32,8 +32,7 @@ Rules that apply to every command:
   below add it.
 - `UNLEASH_PAT` is your personal access token. It starts with `user:`. Pass
   it in the `Authorization` header with no `Bearer` prefix.
-- `PROJECT_ID` is your project's id, not its display name. It is also your
-  flag suffix.
+- `PROJECT_ID` is your project's id, not its display name.
 - A `401` response means the token is wrong. Check that you are using the
   personal access token, not the backend token, and that it has not
   expired.
@@ -49,7 +48,7 @@ curl -s -H "Authorization: $UNLEASH_PAT" \
 ## Create a flag
 
 Creates a flag, off by default. Set `FLAG` and the type first: `release`
-for a feature, `operational` for a kill switch, `experiment` for an A/B
+for a feature, `kill-switch` for a kill switch, `experiment` for an A/B
 test. Expected response: `201`. A `409` means the name is taken, live or
 archived, somewhere on the instance; check that `FLAG` carries your project
 id.
@@ -89,7 +88,7 @@ curl -s -X POST "$UNLEASH_URL/api/admin/projects/$PROJECT_ID/features/$FLAG/envi
   -d "{\"name\": \"flexibleRollout\", \"constraints\": [{\"contextName\": \"userId\", \"operator\": \"IN\", \"values\": [\"$INVITE_CODE\"]}], \"parameters\": {\"rollout\": \"100\", \"stickiness\": \"default\", \"groupId\": \"$FLAG\"}}"
 ```
 
-## Add a strategy with list and deck variants (part 4)
+## Add a strategy with list and deck variants (part 3)
 
 A gradual rollout at 100 percent whose variants split sessions 50/50.
 Expected response: `200`.

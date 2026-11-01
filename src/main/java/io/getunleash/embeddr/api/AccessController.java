@@ -1,6 +1,7 @@
 package io.getunleash.embeddr.api;
 
 import io.getunleash.embeddr.flags.FeatureFlags;
+import io.getunleash.embeddr.flags.Flags;
 import io.getunleash.embeddr.flags.Visitor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -32,8 +33,8 @@ class AccessController {
         // codes as the percentage climbs.
         Visitor visitor = new Visitor(sessionId, request.inviteCode());
 
-        // Workshop, part 2: the door is wide open. Put it behind the
-        // early-access flag. The workbook has the one line to change.
+        // Workshop, part 2: the door is wide open. Put it behind the flag named
+        // in Flags.EARLY_ACCESS. The workbook has the one line to change.
         return new AccessResponse(true);
     }
 }

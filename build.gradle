@@ -9,10 +9,15 @@ group = 'io.getunleash'
 version = '1.0.0'
 description = 'Embeddr, dating for AI agents. A workshop app for runtime control with Unleash.'
 
+// Compiles with whatever JDK runs Gradle, targeting Java 17, so attendees
+// use the JDK they already have and nothing Java-related is downloaded.
 java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
+    sourceCompatibility = JavaVersion.VERSION_17
+    targetCompatibility = JavaVersion.VERSION_17
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 17
 }
 
 repositories {
@@ -31,7 +36,8 @@ tasks.named('test') {
 }
 
 // ---------------------------------------------------------------------------
-// Frontend. Gradle downloads its own Node, so a JDK is the only prerequisite.
+// Frontend. Gradle downloads its own Node into the project's .gradle folder,
+// so a JDK is the only prerequisite and nothing is installed system-wide.
 // `./gradlew web` builds web/ into web/dist; the running app serves it from
 // there, so rebuilding while the app runs is enough to see frontend changes.
 // Behind a proxy that blocks nodejs.org, point `distBaseUrl` at a mirror.
@@ -123,16 +129,21 @@ tasks.register('configure') {
 }
 
 // Everything an attendee needs to know before the workshop starts: the
-// toolchain builds, the frontend builds, .env is filled in, and both tokens
+// JDK is recent enough, the frontend builds, .env is filled in, and both tokens
 // are accepted by the instance. Run it on the venue wifi, or better, at home.
 tasks.register('precheck') {
     group = 'embeddr'
-    description = 'Checks the toolchain, .env and the Unleash connection.'
+    description = 'Checks the JDK, the frontend build, .env and the Unleash connection.'
     dependsOn 'classes', web
     def root = layout.projectDirectory
     doLast {
         def problems = []
-        println "ok   JDK ${System.getProperty('java.version')} runs Gradle; the app compiles with the JDK 21 toolchain"
+        def javaVersion = JavaVersion.current()
+        if (javaVersion < JavaVersion.VERSION_17) {
+            problems << "JDK ${javaVersion} is too old. The app needs 17 or newer."
+        } else {
+            println "ok   JDK ${System.getProperty('java.version')} runs Gradle and the app"
+        }
         println 'ok   frontend built into web/dist'
 
         if (!root.file('.env').asFile.exists()) {
@@ -142,31 +153,28 @@ tasks.register('precheck') {
             def url = (env.UNLEASH_URL ?: '').replaceAll('/+$', '').replaceAll('/api$', '')
             def token = env.UNLEASH_BACKEND_TOKEN ?: ''
             def pat = env.UNLEASH_PAT ?: ''
-            def suffix = env.UNLEASH_FLAG_SUFFIX ?: ''
-            ['UNLEASH_URL': url, 'UNLEASH_BACKEND_TOKEN': token, 'UNLEASH_FLAG_SUFFIX': suffix, 'UNLEASH_PAT': pat].each { key, value ->
+            ['UNLEASH_URL': url, 'UNLEASH_BACKEND_TOKEN': token].each { key, value ->
                 if (value.isEmpty()) problems << "${key} is empty in .env"
             }
-            if (!suffix.isEmpty() && !(suffix ==~ /[a-z0-9][a-z0-9._-]*/)) {
-                problems << "UNLEASH_FLAG_SUFFIX '${suffix}' is not a valid flag name part. Use your project id: lowercase letters, digits, dots, dashes."
-            }
             def project = token.contains(':') ? token.substring(0, token.indexOf(':')) : ''
-            if (!suffix.isEmpty() && !project.isEmpty() && project != '*' && project != suffix) {
-                problems << "UNLEASH_FLAG_SUFFIX is '${suffix}' but the backend token belongs to project '${project}'. They should match."
-            }
             if (!url.isEmpty() && !token.isEmpty()) {
                 def status = httpStatus("${url}/api/client/features", token)
                 if (status == 200) println "ok   backend token accepted by ${url} (project ${project})"
+                else if (status < 0) problems << "could not reach ${url}. Check your network, VPN or proxy, then run the pre-check again."
                 else problems << "backend token rejected by ${url}/api/client/features (HTTP ${status}). Check UNLEASH_URL and UNLEASH_BACKEND_TOKEN."
             }
-            if (!url.isEmpty() && !pat.isEmpty()) {
+            if (pat.isEmpty()) {
+                println 'skip UNLEASH_PAT is empty. The assistant needs it in part 4; fill it in and run ./gradlew configure then.'
+            } else if (!url.isEmpty()) {
                 def status = httpStatus("${url}/api/admin/user", pat)
                 if (status == 200) println "ok   personal access token accepted; the MCP endpoint is ${url}/api/admin/mcp"
+                else if (status < 0) { /* already reported above */ }
                 else problems << "personal access token rejected by ${url}/api/admin/user (HTTP ${status}). It must start with user:"
             }
         }
 
         if (problems.isEmpty()) {
-            println 'All checks passed. Next: ./gradlew configure, then ./gradlew bootRun'
+            println 'All checks passed. Next: ./gradlew bootRun'
         } else {
             problems.each { println "FAIL ${it}" }
             throw new GradleException("${problems.size()} check(s) failed, see above")
@@ -183,7 +191,7 @@ def httpStatus(String url, String authorization) {
             .timeout(java.time.Duration.ofSeconds(15)).GET().build()
         return client.send(request, java.net.http.HttpResponse.BodyHandlers.discarding()).statusCode()
     } catch (Exception e) {
-        println "     could not reach ${url}: ${e.message}"
+        println "     could not reach ${url}: ${e.message ?: e.class.simpleName}"
         return -1
     }
 }

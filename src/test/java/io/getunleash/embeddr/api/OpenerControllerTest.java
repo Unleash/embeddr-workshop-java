@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import io.getunleash.embeddr.api.OpenerController.OpenerRequest;
+import io.getunleash.embeddr.flags.Flags;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -22,7 +23,7 @@ class OpenerControllerTest {
 
     @Test
     void sameSessionAndCardKeepTheirLine() {
-        flags.enabled.add("auto-rizz");
+        flags.enabled.add(Flags.AUTO_RIZZ);
         String first = controller.opener(new OpenerRequest("s-1", null, "m-1", 0)).opener();
         String again = controller.opener(new OpenerRequest("s-1", null, "m-1", 0)).opener();
         assertNotNull(first);
@@ -31,7 +32,7 @@ class OpenerControllerTest {
 
     @Test
     void rerollLandsOnADifferentLine() {
-        flags.enabled.add("auto-rizz");
+        flags.enabled.add(Flags.AUTO_RIZZ);
         String base = controller.opener(new OpenerRequest("s-1", null, "m-1", 0)).opener();
         String reroll = controller.opener(new OpenerRequest("s-1", null, "m-1", 1)).opener();
         assertNotEquals(base, reroll);

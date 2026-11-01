@@ -1,6 +1,7 @@
 package io.getunleash.embeddr.api;
 
 import io.getunleash.embeddr.flags.FeatureFlags;
+import io.getunleash.embeddr.flags.Flags;
 import io.getunleash.embeddr.flags.Visitor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -26,6 +27,6 @@ class ThemeController {
     @PostMapping("/theme")
     ThemeResponse theme(@RequestBody ThemeRequest request) {
         String sessionId = Requests.requireSessionId(request.sessionId());
-        return new ThemeResponse(flags.isEnabled("light-mode", Visitor.session(sessionId)));
+        return new ThemeResponse(flags.isEnabled(Flags.LIGHT_MODE, Visitor.session(sessionId)));
     }
 }

@@ -12,7 +12,6 @@ import org.springframework.boot.context.properties.bind.DefaultValue;
 record UnleashSettings(
         @DefaultValue("") String url,
         @DefaultValue("") String backendToken,
-        @DefaultValue("") String flagSuffix,
         @DefaultValue("5") int metricsIntervalSeconds) {
 
     boolean configured() {

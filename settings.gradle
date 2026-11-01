@@ -1,8 +1,1 @@
-// Downloads a matching JDK when the one on the machine does not fit the
-// toolchain declared in build.gradle. Attendees only need a JDK that can
-// run the Gradle wrapper (17 or newer); the rest is provisioned.
-plugins {
-    id 'org.gradle.toolchains.foojay-resolver-convention' version '1.0.0'
-}
-
 rootProject.name = 'embeddr'

@@ -11,51 +11,30 @@ import org.junit.jupiter.api.Test;
 
 class UnleashFeatureFlagsTest {
 
+    private final FakeUnleash fake = new FakeUnleash();
+    private final UnleashFeatureFlags flags = new UnleashFeatureFlags(fake);
     private final Visitor visitor = Visitor.session("s-1");
 
     @Test
-    void appendsTheProjectSuffixToFlagNames() {
-        FakeUnleash fake = new FakeUnleash();
+    void asksUnleashForTheFlagByItsExactName() {
         fake.enable("light-mode-melinda-f");
-        UnleashFeatureFlags flags = new UnleashFeatureFlags(fake, "melinda-f");
 
-        assertTrue(flags.isEnabled("light-mode", visitor));
-        assertTrue(flags.isEnabled("light-mode-melinda-f", visitor), "a name that already carries the suffix is left alone");
-        assertFalse(flags.isEnabled("auto-rizz", visitor));
-    }
-
-    @Test
-    void usesShortNamesWhenThereIsNoSuffix() {
-        FakeUnleash fake = new FakeUnleash();
-        fake.enable("light-mode");
-        UnleashFeatureFlags flags = new UnleashFeatureFlags(fake, "");
-
-        assertTrue(flags.isEnabled("light-mode", visitor));
-        assertEquals("thumbs_down_count", flags.metricName("thumbs_down_count"));
-    }
-
-    @Test
-    void metricNamesGetTheSuffixWithUnderscores() {
-        UnleashFeatureFlags flags = new UnleashFeatureFlags(new FakeUnleash(), "melinda-f");
-
-        assertEquals("thumbs_down_count_melinda_f", flags.metricName("thumbs_down_count"));
-        assertEquals("early-access-melinda-f", flags.flagName("early-access"));
+        assertTrue(flags.isEnabled("light-mode-melinda-f", visitor));
+        assertFalse(flags.isEnabled("light-mode", visitor), "no hidden renaming");
+        assertFalse(flags.isEnabled("auto-rizz-melinda-f", visitor), "unknown flags are off");
     }
 
     @Test
     void variantIsEmptyUnlessTheFlagServesOne() {
-        FakeUnleash fake = new FakeUnleash();
-        UnleashFeatureFlags flags = new UnleashFeatureFlags(fake, "melinda-f");
         assertEquals(Optional.empty(), flags.variant("match-layout-experiment", visitor));
 
-        fake.enable("match-layout-experiment-melinda-f");
-        fake.setVariant("match-layout-experiment-melinda-f", new Variant("deck", (String) null, true));
+        fake.enable("match-layout-experiment");
+        fake.setVariant("match-layout-experiment", new Variant("deck", (String) null, true));
         assertEquals(Optional.of("deck"), flags.variant("match-layout-experiment", visitor));
     }
 
     @Test
     void countsImpactMetricsWithoutBlowingUp() {
-        UnleashFeatureFlags flags = new UnleashFeatureFlags(new FakeUnleash(), "melinda-f");
         flags.increment("thumbs_down_count");
         flags.increment("thumbs_down_count");
     }

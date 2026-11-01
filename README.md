@@ -15,18 +15,22 @@ redeploy.
 
 ## Run it
 
-Prerequisite: a JDK, version 17 or newer, to run the Gradle wrapper. Gradle
-downloads the JDK 21 toolchain the app compiles with, and its own Node for
-the frontend. You also need an Unleash instance with a Backend token.
+Prerequisite: a JDK, version 17 or newer. Gradle uses the one you have and
+downloads its own Node for the frontend into the project folder, so nothing
+is installed system-wide. You also need an Unleash instance with a Backend
+token.
 
 ```bash
-cp .env.example .env        # then fill in the four values
-./gradlew precheck          # toolchain, frontend build, tokens
-./gradlew configure         # renders the MCP config for every assistant
+cp .env.example .env        # then fill in the instance URL and backend token
+./gradlew precheck          # JDK, frontend build, tokens
 ./gradlew bootRun           # http://localhost:8080
 ```
 
-On Windows use `gradlew.bat` in place of `./gradlew`.
+To connect an AI assistant, add your personal access token to `.env` and
+run `./gradlew configure`, which renders the MCP config for every supported
+assistant.
+
+On Windows run these in Git Bash, which comes with Git for Windows, and they work as written. In PowerShell or cmd use `.\gradlew.bat` in place of `./gradlew`.
 
 Without a `.env` the app still boots, every flag evaluates to off, and the
 app renders the plain Embeddr experience.
@@ -39,11 +43,13 @@ running app serves the new build, reload the browser.
 
 Every flag is evaluated in the backend with the session id as context.
 
-Flag names are unique across a whole Unleash instance, and the workshop
-instance hosts one project per attendee, so every flag the app evaluates is
-named `<flag>-<suffix>` with `UNLEASH_FLAG_SUFFIX` from `.env`. The code uses
-the short names below; the wrapper adds the suffix. Impact metrics get the
-same suffix with underscores: `thumbs_down_count_melinda_f`.
+Every flag name the app uses is a constant in
+[`flags/Flags.java`](src/main/java/io/getunleash/embeddr/flags/Flags.java),
+and every impact metric name in
+[`flags/Metrics.java`](src/main/java/io/getunleash/embeddr/flags/Metrics.java),
+spelled exactly as in Unleash. Names are unique across a whole instance, so
+in the workshop each attendee creates their flags with their project id in
+the name, `early-access-melinda-f`, and puts that name in `Flags.java`.
 
 | Flag | What it does | Setup |
 |------|--------------|-------|
@@ -60,9 +66,10 @@ that is down on purpose.
 
 | Path | What it is |
 |------|------------|
-| [`src/main/java/io/getunleash/embeddr/flags/`](src/main/java/io/getunleash/embeddr/flags/) | The flag wrapper. `FeatureFlags` is the interface controllers use. `UnleashFeatureFlags` is the only class that imports the Unleash SDK. `OfflineFeatureFlags` answers when nothing is configured. |
+| [`src/main/java/io/getunleash/embeddr/flags/`](src/main/java/io/getunleash/embeddr/flags/) | The flag wrapper. `Flags` and `Metrics` hold every flag and metric name. `FeatureFlags` is the interface controllers use. `UnleashFeatureFlags` is the only class that imports the Unleash SDK. `OfflineFeatureFlags` answers when nothing is configured. |
 | [`src/main/java/io/getunleash/embeddr/api/`](src/main/java/io/getunleash/embeddr/api/) | One controller per endpoint. Each asks the wrapper a question and returns what the frontend should show. |
 | [`src/main/java/io/getunleash/embeddr/content/`](src/main/java/io/getunleash/embeddr/content/) | The opener line bank. |
+| [`src/main/java/io/getunleash/embeddr/payment/`](src/main/java/io/getunleash/embeddr/payment/) | The payment provider, down on purpose. |
 | [`web/`](web/) | The frontend. No Unleash SDK, no flag logic, no token. Built by Gradle into `web/dist`. |
 | [`tooling/assistants/`](tooling/assistants/) | MCP config templates, rendered by `./gradlew configure`. |
 | [`WORKBOOK.md`](WORKBOOK.md) | The attendee workbook. Start here at the workshop. |
@@ -89,14 +96,12 @@ Every POST takes `{ sessionId, userId? }` plus endpoint fields and answers
 ## Deploy
 
 The `Dockerfile` builds frontend and backend into one jar; the container
-serves both from one port. Set `UNLEASH_URL`, `UNLEASH_BACKEND_TOKEN` and,
-for a project that owns the flags under their short names, leave
-`UNLEASH_FLAG_SUFFIX` empty. `railway.json` wires it up for Railway;
+serves both from one port. Set `UNLEASH_URL` and `UNLEASH_BACKEND_TOKEN`. `railway.json` wires it up for Railway;
 `PORT` comes from the platform.
 
 ## Behind a corporate proxy
 
-Gradle, Node and npm each download something on first run. Point them at
+The Gradle wrapper, Node and npm each download something on first run. Point them at
 your proxy or mirrors:
 
 - Gradle: `systemProp.https.proxyHost` and `systemProp.https.proxyPort` in
@@ -105,5 +110,3 @@ your proxy or mirrors:
   an internal mirror of nodejs.org/dist.
 - npm: `registry=` in `web/.npmrc`.
 
-Run `./gradlew precheck` once on a network that works and the downloads are
-cached for the day.

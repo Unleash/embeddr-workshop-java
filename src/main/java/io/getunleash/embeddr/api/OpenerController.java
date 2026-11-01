@@ -2,6 +2,7 @@ package io.getunleash.embeddr.api;
 
 import io.getunleash.embeddr.content.Openers;
 import io.getunleash.embeddr.flags.FeatureFlags;
+import io.getunleash.embeddr.flags.Flags;
 import io.getunleash.embeddr.flags.Visitor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,7 +26,7 @@ class OpenerController {
     OpenerResponse opener(@RequestBody OpenerRequest request) {
         String sessionId = Requests.requireSessionId(request.sessionId());
 
-        if (!flags.isEnabled("auto-rizz", new Visitor(sessionId, request.userId()))) {
+        if (!flags.isEnabled(Flags.AUTO_RIZZ, new Visitor(sessionId, request.userId()))) {
             return new OpenerResponse(null);
         }
 

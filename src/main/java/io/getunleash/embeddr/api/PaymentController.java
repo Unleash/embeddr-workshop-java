@@ -1,5 +1,6 @@
 package io.getunleash.embeddr.api;
 
+import io.getunleash.embeddr.payment.PaymentProvider;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -8,26 +9,29 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Embeddr's payment provider, which is down. The outage is scripted: the
- * workshop ships a paid feature against this provider and rescues it with a
- * flag flip, so the failure below is load-bearing. Do not fix, stub, or
- * route around it.
+ * The payment provider's HTTP face. It answers 502 because the provider is
+ * down on purpose; see {@link PaymentProvider}. Leave this endpoint as is.
  */
 @RestController
 class PaymentController {
 
     record PaymentRequest(String sessionId) {}
 
-    private static final long PROVIDER_DELAY_MS = 900;
+    private final PaymentProvider provider;
+
+    PaymentController(PaymentProvider provider) {
+        this.provider = provider;
+    }
 
     @PostMapping("/payment")
-    ResponseEntity<Map<String, String>> payment(@RequestBody PaymentRequest request) throws InterruptedException {
-        Requests.requireSessionId(request.sessionId());
-
-        // Pretend to think, then fail the way real providers do: slowly.
-        Thread.sleep(PROVIDER_DELAY_MS);
+    ResponseEntity<Map<String, String>> payment(@RequestBody PaymentRequest request) {
+        String sessionId = Requests.requireSessionId(request.sessionId());
+        PaymentProvider.Receipt receipt = provider.charge(sessionId);
+        if (receipt.charged()) {
+            return ResponseEntity.ok(Map.of("status", "charged"));
+        }
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of(
-                "error", "payment provider not responding",
+                "error", receipt.detail(),
                 "detail", "you have not been charged. probably."));
     }
 }

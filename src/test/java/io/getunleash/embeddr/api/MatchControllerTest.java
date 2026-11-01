@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.getunleash.embeddr.api.MatchController.MatchRequest;
+import io.getunleash.embeddr.flags.Flags;
+import io.getunleash.embeddr.flags.Metrics;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -14,13 +16,20 @@ class MatchControllerTest {
 
     @Test
     void creditsTheTapToTheLayoutTheSessionSees() {
-        flags.variants.put("match-layout-experiment", "deck");
+        flags.variants.put(Flags.MATCH_LAYOUT_EXPERIMENT, "deck");
         controller.match(new MatchRequest("s-1", null));
-        assertEquals(List.of("match_count_deck"), flags.counted);
+        assertEquals(List.of(Metrics.MATCH_COUNT_DECK), flags.counted);
     }
 
     @Test
     void tapsOutsideTheExperimentCountNothing() {
+        controller.match(new MatchRequest("s-1", null));
+        assertTrue(flags.counted.isEmpty());
+    }
+
+    @Test
+    void unknownVariantsCountNothing() {
+        flags.variants.put(Flags.MATCH_LAYOUT_EXPERIMENT, "carousel");
         controller.match(new MatchRequest("s-1", null));
         assertTrue(flags.counted.isEmpty());
     }
