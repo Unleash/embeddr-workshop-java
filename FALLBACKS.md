@@ -23,7 +23,7 @@ export FLAG="premium-upsell-$PROJECT_ID"
 On Windows, run everything on this page in Git Bash, which comes with Git for Windows. PowerShell quotes JSON differently, so these commands do not work there as written.
 
 No curl on your machine? The Unleash documentation ships an interactive
-[API reference](https://docs.getunleash.io/reference/api/unleash) where you
+[API reference](https://docs.getunleash.io/api) where you
 can run the same requests from the browser.
 
 Rules that apply to every command:

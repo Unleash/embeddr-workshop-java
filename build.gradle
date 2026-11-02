@@ -147,7 +147,8 @@ tasks.register('precheck') {
         println 'ok   frontend built into web/dist'
 
         if (!root.file('.env').asFile.exists()) {
-            problems << '.env is missing. Copy .env.example to .env and fill it in.'
+            println 'next .env does not exist yet. Copy .env.example to .env, fill in UNLEASH_URL and UNLEASH_BACKEND_TOKEN as the workbook shows, then run ./gradlew precheck again.'
+            return
         } else {
             def env = dotenv()
             def url = (env.UNLEASH_URL ?: '').replaceAll('/+$', '').replaceAll('/api$', '')

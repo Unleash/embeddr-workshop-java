@@ -130,14 +130,14 @@ cd embeddr-workshop-java
 ```
 
 The first run downloads Gradle, Node and the frontend dependencies, which
-takes a few minutes. Start it, then read ahead in
-part 1 while it runs. It ends with a failure on the missing `.env`. That is
-expected: the downloads happened and that was the point. If it fails
-earlier, on the JDK or on a download, you are probably behind a corporate
-proxy or VPN: the [README](README.md#behind-a-corporate-proxy) has the
-three settings that fix it, and turning the VPN off is the quick version.
+takes a few minutes. Start it, then read ahead in part 1 while it runs. It
+ends by telling you that `.env` does not exist yet and what to do next.
+That is the point: the downloads happened. If it fails earlier, on the JDK
+or on a download, you are probably behind a corporate proxy or VPN: the
+[README](README.md#behind-a-corporate-proxy) has the three settings that
+fix it, and turning the VPN off is the quick version.
 
-**Checkpoint 0.** The pre-check gets as far as complaining about `.env`.
+**Checkpoint 0.** The pre-check ends with the line about `.env`.
 
 ## Part 1: run Embeddr against your project
 
@@ -160,7 +160,8 @@ Two of them are for now; `UNLEASH_PAT` waits until part 4.
 
 1. Check your email for the invitation to the workshop Unleash instance and
    sign in.
-2. Look at the address bar. Copy everything before `/projects`, for example
+2. Open **Projects** in the sidebar, then look at the address bar. Copy
+   everything before `/projects`, for example
    `https://us.app.unleash-hosted.com/abcd1234`, and paste it as the value
    of `UNLEASH_URL` in `.env`. No trailing slash.
 
@@ -289,9 +290,11 @@ and add a second one next to it.
 1. In the development environment, select **Add strategy** again, then
    **Gradual rollout**. Leave it without constraints and set the rollout to
    50 percent. Save it.
-2. Open two or three fresh private windows and type any code in each.
-   Roughly half of them get in. Which half is decided by the session id,
-   so the same window gets the same answer every time it asks.
+2. Open two or three fresh private windows and type a different code in
+   each. Roughly half of them get in. Which half is decided by the code,
+   because the invite code travels as the Unleash userId and the rollout
+   sticks to it: the same code gets the same answer in every window, and
+   a window keeps its answer every time it asks.
 3. Edit that strategy and move the rollout to 100 percent. Every window is
    in now, and so is everyone who comes later.
 
@@ -325,18 +328,20 @@ layout that served it. All that is missing is the flag.
    created. In `Metrics.java`, next to it, set the two match counters to
    `match_count_list_<your project id>` and
    `match_count_deck_<your project id>`, with underscores, for example
-   `match_count_deck_melinda_f`. Metric names are unique across the
-   instance too, and these keep your taps apart from the room's. Restart
-   `bootRun`.
+   `match_count_deck_melinda_f`. Metric names follow Prometheus rules,
+   letters, digits and underscores only, so every hyphen in your project
+   id becomes an underscore here. The compiler will not catch a hyphen for
+   you. Metric names are unique across the instance too, and these keep
+   your taps apart from the room's. Restart `bootRun`.
 3. In the development environment, add a **Gradual rollout** strategy at
    100 percent. In the strategy's **Variants** tab, add two variants,
    `list` and `deck`, with equal weights. Save, and turn the environment
    on.
-4. Reload the app, then open one or two private windows and type any
-   invite code in each; the door is open for everyone since part 2. Each
-   window is its own session, and each session sticks to its side of the
-   split. At least one of them should show the deck: one profile at a
-   time, with Pass and Match.
+4. Reload the app, then open private windows, typing any invite code in
+   each, until you have one window on each layout. The door is open for
+   everyone since part 2. Each window is its own session and each session
+   sticks to its side of the split, so it may take three or four windows
+   before the deck shows up: one profile at a time, with Pass and Match.
 5. Tap **Match** a few times in each window.
 6. In the Unleash UI, open **Analytics** in the sidebar, then **Impact
    metrics**. Select **Add chart**, pick `match_count_list_<your project
@@ -530,6 +535,14 @@ on its own.
 **Checkpoint 7.** The development environment of your Auto-Rizz flag shows
 it was disabled by the safeguard, and the openers are gone from the app.
 
+### If something is off
+
+| Symptom | Likely cause |
+|---------|--------------|
+| No openers after walking the plan to 100 percent | `AUTO_RIZZ` in `Flags.java` is not exactly the name in Unleash, or `bootRun` was not restarted, or the environment toggle is off |
+| The safeguard never trips | The metric it watches is not the one in `Metrics.java`, check the spelling and underscores. Or the taps were spread over more than one window: tap three more times within a minute and wait again |
+| The safeguard tripped before you were ready | The first tap from step 5 counted too. That is fine, turn the environment back on and tap again |
+
 ## Part 6: ship through a change request
 
 In production, nobody flips flags alone. In this part you turn that rule
@@ -580,6 +593,7 @@ shows approved and applied by them, and the toggle is in your header.
 
 | Symptom | Likely cause |
 |---------|--------------|
+| There is no **Assign user/group** button | You are a Member of your own project rather than its Owner. Ask an organiser to fix the role |
 | You cannot find your neighbor in the user search | They registered with a different email than the one they gave you, or they have not accepted the instance invitation yet |
 | Your neighbor sees the project but no Approve button | They got the Member role instead of Reviewer. Change it under **User access** |
 | The flag turned on immediately, no draft | Change requests are not on for your development environment. Check **Settings**, then **Change request configuration** |
@@ -601,8 +615,12 @@ as a lifecycle: **Define**, **Develop**, **Production**, **Cleanup**,
    Embeddr Premium is now fully rolled out. Remove the flag from the code.
    ```
 
-3. Restart `bootRun`, archive the flag in the Unleash UI yourself, and
-   verify the call to action still renders.
+3. Restart `bootRun` and verify the call to action still renders, now
+   without a flag behind it.
+4. Archive the flag in the Unleash UI. Change requests are still on from
+   part 6, so the archive lands in a draft: submit it and have your
+   neighbor approve it. Retiring a flag goes through review like any other
+   change.
 
 **Checkpoint 9.** The Premium flag went develop, cleanup, archived, and the
 feature still works as a permanent part of the app.
@@ -625,4 +643,6 @@ protects itself, and it ends in governance.
 
 ## Where to go next
 
-To continue experimenting with Unleash, sign up for a free trial at: https://www.getunleash.io/.
+- Keep experimenting with Unleash on a free trial: https://www.getunleash.io/
+- The Unleash MCP server your assistant used today: https://docs.getunleash.io/integrate/mcp
+- The Java SDK behind `UnleashFeatureFlags`: https://docs.getunleash.io/sdks/java
