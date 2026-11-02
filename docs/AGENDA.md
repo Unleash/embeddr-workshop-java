@@ -12,12 +12,12 @@ app, then a checkpoint in the workbook.
 | 0:00 | Open: early access. Room scans the QR, lands on the waitlist, types a code. Enable the flag for yourself in production, target one person's code, roll out in slices and check in with the room as phones pop through the door. | Presenter | 15 | |
 | 0:15 | The arc. One person with a flag, a system that protects itself, governance. Light mode as the one-liner: the flag gates the control, not the state. | Presenter | 5 | |
 | 0:20 | Setup, UI only: register, install, clone, `precheck`, then `.env` with instance URL and backend token, `bootRun`. No assistant yet. | Hands-on | 25 | Parts 0 and 1 |
-| 0:45 | First flag by hand: wire `early-access`, let yourself in by user id. | Hands-on | 15 | Part 2 |
+| 0:45 | First flag by hand: wire `early-access`, let yourself in by user id, then open the door to everyone with a gradual rollout. | Hands-on | 15 | Part 2 |
 | 1:00 | Experiment. Room moment: everyone taps Match on the hosted app and the two counters diverge. Then each attendee runs the experiment in their project. | Hands-on | 25 | Part 3 |
 | 1:25 | Break | | 10 | |
-| 1:35 | Connect the assistant (PAT, `configure`), then AI killswitch: it builds Premium plus the payment kill switch. Release, break, rescue, kill. | Hands-on | 35 | Part 4 |
+| 1:35 | Connect the assistant (PAT, `configure`), then it builds Premium behind a release flag. Release, break, kill. | Hands-on | 35 | Part 4 |
 | 2:10 | Safeguard. Room moment: everyone taps Ick, the safeguard trips, the flag turns itself off. Then each attendee trips their own. | Hands-on | 20 | Part 5 |
-| 2:30 | Governance. Pairs approve each other's change request for light mode. | Hands-on | 15 | Part 6 |
+| 2:30 | Governance. Pairs add each other as Reviewer, then approve each other's change request for light mode. | Hands-on | 15 | Part 6 |
 | 2:45 | Retire Premium. Lifecycle, cleanup, the assistant removes the flag, archive. | Hands-on | 10 | Part 7 |
 | 2:55 | Close. What they built, where to go next. | Presenter | 5 | |
 
@@ -29,21 +29,25 @@ demo.
 ### Unleash instance
 
 - One project per attendee, named first name and last initial, with the
-  attendee invited as a member. Attendees put the project id in every flag
-  name they create, since names are unique across the instance.
+  attendee invited as its owner, which part 6 needs for assigning the
+  reviewer role. Attendees put the project id in every flag name they
+  create, since names are unique across the instance.
 - Projects are created on the day from the registration form responses, so
   keep the form open on a second screen during part 0.
-- Change requests enabled on the `development` environment of every
-  attendee project, one approval required, for part 6. Attendees cannot
-  approve their own requests, so pair them and give each attendee a role in
-  their partner's project that can approve.
+- Change requests are not pre-enabled. In part 6 each attendee turns them
+  on for their own `development` environment with one required approval.
+- A project role named `Reviewer` exists on the instance with the change
+  request permissions, approve/reject and apply/reject. In part 6
+  attendees pair up and each adds their neighbor to their own project with
+  that role. Assigning roles needs project access rights, so attendees
+  must be owners of their own project, not members.
 - Impact metrics and safeguards available on the instance. Verified
   2026-10-29: counters reported by the Java SDK 12.3.1 appear in the
   instance within one metrics interval.
 - The `embeddr-demo` project with the hosted app's flags under their short
   names: `early-access`, `light-mode`, `match-layout-experiment`,
-  `auto-rizz`, plus the pre-built `embeddr-premium-upsell` and
-  `payment-provider-kill-switch` for the opening, if used there.
+  `auto-rizz`, plus the pre-built `embeddr-premium-upsell` for the
+  opening, if used there.
 
 ### Hosted app
 

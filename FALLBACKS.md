@@ -48,8 +48,7 @@ curl -s -H "Authorization: $UNLEASH_PAT" \
 ## Create a flag
 
 Creates a flag, off by default. Set `FLAG` and the type first: `release`
-for a feature, `kill-switch` for a kill switch, `experiment` for an A/B
-test. Expected response: `201`. A `409` means the name is taken, live or
+for a feature, `experiment` for an A/B test. Expected response: `201`. A `409` means the name is taken, live or
 archived, somewhere on the instance; check that `FLAG` carries your project
 id.
 

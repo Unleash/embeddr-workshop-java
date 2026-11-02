@@ -25,7 +25,7 @@ joins in part 4.
 | 1 | Run Embeddr against your project: create `.env`, fill in two values, start the app | Unleash UI, terminal |
 | 2 | Wire your first flag by hand: the waitlist from the opening demo, and let yourself in by user id | Unleash UI, two lines of Java |
 | 3 | Run an A/B test on the match layout with a success metric | Unleash UI, names in Java |
-| 4 | Connect your assistant, then have it build Embeddr Premium behind flags, rescue the failing payment with a kill switch, and kill the feature | Assistant, Unleash UI |
+| 4 | Connect your assistant, have it build Embeddr Premium behind a flag, then kill the feature when its payment provider fails | Assistant, Unleash UI |
 | 5 | Attach a safeguard to Auto-Rizz and trip it yourself | Unleash UI, names in Java |
 | 6 | Ship light mode through a change request your neighbor approves | Unleash UI, names in Java, in pairs |
 | 7 | Optional: retire the Premium flag through its lifecycle | Unleash UI, assistant |
@@ -281,9 +281,27 @@ Now open a private browser window, which is a new session, and type a
 different code. It waits at the door. That is one flag admitting one
 person, by user id, with everybody else held outside.
 
-**Checkpoint 2.** `early-access-<your project id>` exists, is on in
-development with a userId constraint, your browser is through the door, and
-a private window with another code is not.
+### Open the door wider
+
+One strategy per flag is rarely the end of the story. Keep the one you have
+and add a second one next to it.
+
+1. In the development environment, select **Add strategy** again, then
+   **Gradual rollout**. Leave it without constraints and set the rollout to
+   50 percent. Save it.
+2. Open two or three fresh private windows and type any code in each.
+   Roughly half of them get in. Which half is decided by the session id,
+   so the same window gets the same answer every time it asks.
+3. Edit that strategy and move the rollout to 100 percent. Every window is
+   in now, and so is everyone who comes later.
+
+Leave it at 100 percent. The rest of the workbook assumes the door is open
+for every session, including the private windows you open in part 3.
+
+**Checkpoint 2.** `early-access-<your project id>` exists and is on in
+development with two strategies: a userId constraint that let you in first,
+and a gradual rollout at 100 percent that lets everyone else in. Every
+window, private or not, shows the cards.
 
 ### If something is off
 
@@ -314,22 +332,31 @@ layout that served it. All that is missing is the flag.
    100 percent. In the strategy's **Variants** tab, add two variants,
    `list` and `deck`, with equal weights. Save, and turn the environment
    on.
-4. Reload the app, then open one or two private windows. Each window is its
-   own session, and each session sticks to its side of the split. At least
-   one of them should show the deck: one profile at a time, with Pass and
-   Match.
+4. Reload the app, then open one or two private windows and type any
+   invite code in each; the door is open for everyone since part 2. Each
+   window is its own session, and each session sticks to its side of the
+   split. At least one of them should show the deck: one profile at a
+   time, with Pass and Match.
 5. Tap **Match** a few times in each window.
-6. In the Unleash UI, open the impact metrics view and chart your two
-   match counters. The presenter shows where. Within a minute the two lines
-   sit side by side.
+6. In the Unleash UI, open **Analytics** in the sidebar, then **Impact
+   metrics**. Select **Add chart**, pick `match_count_list_<your project
+   id>` from the metric list, keep aggregation **Count**, and save. Add a
+   second chart the same way for `match_count_deck_<your project id>`.
+7. Wait. The app sends its counts every five seconds, but the charts
+   aggregate on the Unleash side and the first points can take a minute or
+   two to show up. Tap Match a few more times while you wait, and refresh
+   the page if nothing has moved after two minutes. Then the two charts
+   climb independently: your taps in the grid window on one, your taps in
+   the deck window on the other.
 
 The variant name travels from Unleash, through `flags.variant(...)` in
 `LayoutController`, to the frontend, which picks the component. The tap
 travels back through `MatchController`, which asks for the same variant and
 counts under it. Nothing in the frontend knows there is an experiment.
 
-**Checkpoint 3.** Two windows show two layouts, and the two match counters
-move independently in Unleash.
+**Checkpoint 3.** Your normal browser window and at least one private
+window show different layouts, one the card grid and one the deck, and the
+two match counters move independently in Unleash.
 
 ## Part 4: connect your assistant and build a feature
 
@@ -391,9 +418,7 @@ Finance is more excited. Let's see.
    ```text
    Add an embeddr premium upsell that shows a premium call to action in the
    match grid inviting the user to subscribe to see more models. Hook it up
-   to our payment provider. Also add a kill switch for the payment provider
-   in case it misbehaves (fallback to an async queue so we can follow up
-   later).
+   to our payment provider.
    ```
 
 2. Watch what the assistant does. Notice the prompt never says the words
@@ -401,26 +426,24 @@ Finance is more excited. Let's see.
    Expect it to:
 
    - evaluate the change through the MCP server and decide it needs a
-     release flag for Premium and a kill switch flag for the payment provider
-   - create both in your project, with your project id in the name, like
-     `premium-upsell-melinda-f` and `payment-kill-switch-melinda-f`, and add
-     them to `Flags.java`
-   - write a controller that serves the call to action only when the
-     Premium flag is on, an upgrade endpoint that charges through the
-     payment provider unless the kill switch is on, in which case it queues
-     the request, and the frontend that renders it all
+     release flag for Premium
+   - create it in your project, with your project id in the name, like
+     `premium-upsell-melinda-f`, and add it to `Flags.java`
+   - write a controller that serves the call to action only when the flag
+     is on, an upgrade endpoint that charges through the payment provider,
+     and the frontend that renders it all
 
-3. Verify its work in the Unleash UI: your project shows two new flags,
-   both off.
+3. Verify its work in the Unleash UI: your project shows one new flag,
+   off in every environment.
 
 4. Restart `bootRun`: Ctrl-C in its terminal, then `./gradlew bootRun`.
    The restart rebuilds the frontend too. Look at the app. No call to action
    anywhere yet. The code is there. The feature is not released.
 
-**Checkpoint 5.** Two new flags exist in your project, turned off, and the
-app shows no premium call to action.
+**Checkpoint 5.** The Premium flag exists in your project, turned off, and
+the app shows no premium call to action.
 
-### Release it, break it, rescue it
+### Release it, break it, kill it
 
 1. Turn the Premium flag on in development with a gradual rollout at 100
    percent, in the UI or by prompt:
@@ -434,17 +457,24 @@ app shows no premium call to action.
    payment provider thinks for a second and fails. It always fails; it is
    built that way. In real life this is the Monday morning incident.
 
-3. You have two runtime moves and no deploy in either. First the kill
-   switch: turn `payment-kill-switch-<your project id>` on. Tap Upgrade
-   again. The request lands in the queue, the user gets a friendly message,
-   and finance follows up later.
+3. You have one runtime move and no deploy: turn the Premium flag off. The
+   call to action vanishes within a few seconds while the app keeps
+   running, and nobody else hits the broken provider.
 
-4. Second, if Premium itself had to go: turn the Premium flag off. The call
-   to action vanishes while the app keeps running.
+> **TL;DR: kill switch vs release flag.** What you just flipped is a
+> release flag. It is meant to be temporary: it ships Premium, and once
+> Premium is stable the flag gets cleaned up (part 7). You can still
+> operate it as a kill switch, because turning it off removes the
+> functionality in seconds, and in an incident that is what counts. A
+> proper kill switch is different in two ways: it is long lived, and it is
+> inverted, so off means "normal" and on means "bypass". If Embeddr's
+> payment provider were known to misbehave long term, you would wrap the
+> call to it in a `kill-switch` flag of its own, keep that flag for as long
+> as the provider is around, and flip it on whenever the provider acts up,
+> without touching the Premium release flag at all.
 
-**Checkpoint 6.** You watched Upgrade fail, flipped the kill switch and
-watched it succeed, then turned Premium off and watched the call to action
-disappear, all without restarting anything.
+**Checkpoint 6.** You watched Upgrade fail, turned Premium off and watched
+the call to action disappear, without restarting anything.
 
 ### If something is off
 
@@ -455,33 +485,41 @@ disappear, all without restarting anything.
 | The flag is on but nothing shows | The flag name in the Java code and in Unleash do not match, or `bootRun` was not restarted after the code change |
 | The assistant started a server or ran a build that failed | Stop it, restart `bootRun` yourself, and ask it to fix the specific compile error you see |
 
-**If your assistant misbehaves:** create the flags yourself with the
+**If your assistant misbehaves:** create the flag yourself with the
 create-flag command in FALLBACKS.md, then ask the assistant to write only
 the code. If the code is wrong, ask it to fix the specific problem you see.
 You do not need to start over.
 
 ## Part 5: let a safeguard protect the flag
 
-Auto-Rizz writes an opening line on every match card. Users can tap **Ick**.
-Every tap bumps the thumbs down impact metric. In this part you roll the
-feature out, then attach a safeguard that turns it off when the room hates
-it, and then you become the room.
+Auto-Rizz writes an opening line on every match card. Users can tap
+**Ick**, the thumbs down, and every tap increments the thumbs down impact
+metric. In this part you roll the feature out, then attach a safeguard that
+turns it off when the thumbs down count goes above a threshold you set.
 
 1. Create a flag named `auto-rizz-<your project id>`, flag type
    **Standard**, used for **Release**.
 2. In `Flags.java`, set `AUTO_RIZZ` to that name. In `Metrics.java`, set
    `THUMBS_DOWN_COUNT` to `thumbs_down_count_<your project id>`, with
    underscores. Restart `bootRun`.
-3. In development, add a gradual rollout at 100 percent and turn the
-   environment on. Reload the app: every card has an opener, and an Ick
-   button.
-4. Tap Ick once, so the metric exists. The app reports metrics every five
+3. This time, no hand-made strategy. In the flag's development
+   environment, select **Use template** and pick **Progressive
+   percentage-based rollout**. It adds a release plan with four
+   milestones: 25, 50, 75 and 100 percent. Turn the environment on. The
+   first milestone starts and a quarter of sessions get openers, which
+   may or may not include yours.
+4. Walk the plan forward: on the release plan, start the next milestone,
+   then the next, until the 100 percent milestone is active. Reload the
+   app: every card has an opener, and an Ick button. In real life each
+   milestone would run for days while you watch the metrics. Today the
+   safeguard does the watching, so you can skip ahead.
+5. Tap Ick once, so the metric exists. The app reports metrics every five
    seconds.
-5. In the flag's development environment, add a **Safeguard**. Pick your
+6. In the flag's development environment, add a **Safeguard**. Pick your
    thumbs down metric, aggregation **Count**, a threshold of 3, over the
    shortest window offered. The action is to disable the environment. The
    presenter walks through the dialog on screen.
-6. Tap Ick four more times. Watch the flag. Within a minute or two the
+7. Tap Ick four more times. Watch the flag. Within a minute or two the
    safeguard trips, the environment turns off, and the openers vanish from
    your app. Nobody at the keyboard.
 
@@ -494,9 +532,32 @@ it was disabled by the safeguard, and the openers are gone from the app.
 
 ## Part 6: ship through a change request
 
-In production, nobody flips flags alone. The organisers enabled change
-requests on the development environment of every project for this part,
-and made you a member of your neighbor's project. Pair up.
+In production, nobody flips flags alone. In this part you turn that rule
+on for your own project, and since you cannot approve your own request,
+you need a reviewer. Pair up with a neighbor.
+
+### Require a review
+
+1. In your project, go to **Settings**, then **Change request
+   configuration**.
+2. Turn change requests on for the **development** environment and set the
+   required approvals to 1. Leave production as it is.
+
+From now on, every change to a flag in development lands in a draft that
+someone else has to approve.
+
+### Let your reviewer in
+
+1. Still in **Settings**, open **User access** and select **Assign
+   user/group**.
+2. Search for your neighbor by email, give them the **Reviewer** role, and
+   save. Reviewer is a role set up for this workshop: it can approve and
+   apply change requests in your project and nothing else. Your neighbor
+   does the same for you in their project.
+3. Reload. Your neighbor's project now shows up in your project list, and
+   yours in theirs.
+
+### Ship light mode
 
 1. Create a flag named `light-mode-<your project id>`, flag type
    **Standard**, used for **Release**. It gates the theme toggle in the
@@ -511,8 +572,17 @@ and made you a member of your neighbor's project. Pair up.
 6. Watch your app: the theme toggle appears in the header. Then do the same
    for your neighbor.
 
-**Checkpoint 8.** Your light mode change request shows approved and applied
-by someone other than you, and the toggle is in your header.
+**Checkpoint 8.** Change requests are on in your development environment,
+your neighbor is a Reviewer in your project, your light mode change request
+shows approved and applied by them, and the toggle is in your header.
+
+### If something is off
+
+| Symptom | Likely cause |
+|---------|--------------|
+| You cannot find your neighbor in the user search | They registered with a different email than the one they gave you, or they have not accepted the instance invitation yet |
+| Your neighbor sees the project but no Approve button | They got the Member role instead of Reviewer. Change it under **User access** |
+| The flag turned on immediately, no draft | Change requests are not on for your development environment. Check **Settings**, then **Change request configuration** |
 
 ## Part 7 (optional): retire a flag
 
@@ -532,8 +602,7 @@ as a lifecycle: **Define**, **Develop**, **Production**, **Cleanup**,
    ```
 
 3. Restart `bootRun`, archive the flag in the Unleash UI yourself, and
-   verify the call to action still renders. Keep the kill switch: that one
-   is permanent by design.
+   verify the call to action still renders.
 
 **Checkpoint 9.** The Premium flag went develop, cleanup, archived, and the
 feature still works as a permanent part of the app.
@@ -544,9 +613,9 @@ feature still works as a permanent part of the app.
   small wrapper with every flag name in one file, and ran it from one
   Gradle command.
 - Wired a flag by hand and admitted one user by id.
-- Built a feature with an AI assistant that wrapped its own work in flags,
-  through the Unleash MCP server, and rescued a failing dependency with a
-  kill switch.
+- Built a feature with an AI assistant that wrapped its own work in a
+  flag, through the Unleash MCP server, and turned the feature off when
+  its payment provider failed.
 - Ran an experiment with a success metric, and let a safeguard turn a
   feature off on its own.
 - Shipped a change through a review, and retired a flag.
@@ -556,14 +625,4 @@ protects itself, and it ends in governance.
 
 ## Where to go next
 
-- Play with the rollout: set your early access flag to a 20 percent gradual rollout
-  with userId stickiness and have a few private windows with different codes
-  watch the door. Raise it to 50, then 100.
-- Replace the plain Premium flag with a release plan: three milestones,
-  internal only, then 10 percent, then 100 percent, stepped through from the
-  UI while the app is open.
-- Add two variants with different call to action copy to the Premium flag,
-  then ask your assistant to make the backend serve the variant payload and
-  the frontend render it.
-- Read `flags/UnleashFeatureFlags.java` and move the wrapper into your own
-  codebase. It is one interface and one class.
+To continue experimenting with Unleash, sign up for a free trial at: https://www.getunleash.io/.

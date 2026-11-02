@@ -48,8 +48,9 @@ control with Unleash and an AI assistant.
   flag `detect_flag` surfaces, create new ones with `create_flag`, and guard
   code with `wrap_change`. Retire flags with `cleanup_flag`.
 - New user-facing features ship behind a `release` flag, off by default.
-  Kill switches for dependencies are `kill-switch` flags, off by default,
-  where on means "bypass the dependency".
+  One flag per feature: the release flag is also how the feature gets
+  turned off if a dependency misbehaves, so do not add a separate kill
+  switch unless the attendee asks for one.
 - Communicate the tool trail: in the final report, name each Unleash MCP
   tool that was called and what it did.
 
@@ -57,23 +58,16 @@ control with Unleash and an AI assistant.
 
 - `payment/PaymentProvider.java` is Embeddr's payment provider, and it is
   down on purpose: `charge(sessionId)` waits about a second and returns a
-  receipt with `charged` false. `PaymentController` exposes it as
-  POST `/payment`, answering 502. The malfunction is part of the workshop
-  script, so never fix it, stub a success path, or route around it inside
-  the provider or its controller.
+  receipt with `charged` false. Nothing calls it until Premium is built.
+  The malfunction is part of the workshop script, so never fix it, stub a
+  success path, or route around it inside the provider.
 - Embeddr Premium is intentionally absent from this codebase. It gets built
   live during the workshop, behind a release flag. Its upgrade flow is a new
-  endpoint that injects `PaymentProvider` and calls `charge`; it does not
-  go over HTTP to `/payment`.
-- A kill switch for the provider, when asked for, is a `kill-switch` flag
-  checked in that upgrade endpoint, before `charge` is called. On means
-  "bypass the provider": the request goes to an in-memory queue for follow
-  up and the user gets a friendly answer. No new dependencies for the
-  queue; a `ConcurrentLinkedQueue` in the controller is enough.
+  endpoint that injects `PaymentProvider` and calls `charge`.
 - The frontend's `post()` in `web/src/lib/api.js` returns null for any
   non-2xx response. An upgrade endpoint should therefore answer 200 with a
-  `status` field, for example `charged`, `queued` or `failed`, so the
-  component can tell the three cases apart and show the right copy.
+  `status` field, for example `charged` or `failed`, so the component can
+  tell the two cases apart and show the right copy.
 
 ## Conventions
 

@@ -56,10 +56,10 @@ the name, `early-access-melinda-f`, and puts that name in `Flags.java`.
 | `early-access` | The waitlist. Off shows the coming soon page to everyone; the invite code a visitor types is the Unleash userId. Wired up by hand in part 2 of the workshop. | Release flag. Target a single invite code to let one person in, then a gradual rollout with userId stickiness to open the doors in slices. |
 | `light-mode` | Puts a theme toggle in the header. The light or dark choice is the user's own, per session; the flag only decides whether the control exists. | Release flag, gradual rollout at 100%, no targeting. |
 | `match-layout-experiment` | A/B on how matches are browsed: variant `list` keeps the card grid, variant `deck` shows one profile at a time. Match taps feed the `match_count_list` and `match_count_deck` impact metrics. | Experiment flag, gradual rollout at 100% with variants `list` and `deck` at 50/50, default stickiness. |
-| `auto-rizz` | Serves an opening line on every match card. Ick taps feed the `thumbs_down_count` impact metric that a safeguard watches. | Release flag, gradual rollout at 100%, default stickiness. Safeguard on the metric, optional. |
+| `auto-rizz` | Serves an opening line on every match card. Ick taps feed the `thumbs_down_count` impact metric that a safeguard watches. | Release flag with a release plan from the progressive percentage-based rollout template, walked to the 100% milestone. Safeguard on the metric, optional. |
 
 Embeddr Premium is intentionally absent. It gets built live during the
-workshop, behind flags the assistant creates, against a payment provider
+workshop, behind a flag the assistant creates, against a payment provider
 that is down on purpose.
 
 ## The pieces
@@ -88,7 +88,6 @@ that is down on purpose.
 | `POST /match` | `match-layout-experiment` | counts the tap under the session's variant |
 | `POST /opener` | `auto-rizz` | `{ opener }`, a line or null |
 | `POST /ick` | | counts a `thumbs_down_count` tap |
-| `POST /payment` | | 502 after 900 ms, always |
 
 Every POST takes `{ sessionId, userId? }` plus endpoint fields and answers
 400 without a session id.
