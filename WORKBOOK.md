@@ -1,5 +1,7 @@
 # Workshop workbook: Runtime Control with AI, Java edition
 
+Read the workbook on our [docs](https://docs.getunleash.io/guides/embeddr-workshop-java).
+
 This workbook takes you through the whole workshop: setting up, wiring your
 first flag by hand, building a feature with your AI assistant, and then
 running an experiment, a safeguard and a change request against your own
