@@ -376,6 +376,13 @@ Your assistant talks to the
 [remote MCP server](https://docs.getunleash.io/integrate/mcp) hosted by the
 workshop instance, authenticated with a personal access token of yours.
 
+This workshop uses version 1 of the Unleash MCP specification and the tools
+from [unleash-mcp v0.5.0](https://github.com/Unleash/unleash-mcp/tree/v0.5.0).
+The remote MCP server on the workshop instance must have version 1 enabled.
+If it does not, run the same tools on your machine, pinned to that release,
+as [tooling/assistants/README.md](tooling/assistants/README.md#run-the-mcp-server-locally)
+shows.
+
 1. In the Unleash UI, select your profile icon, then **Profile settings**,
    then **Personal API tokens**, then **New token**. Create it.
 
@@ -413,6 +420,7 @@ workshop instance, authenticated with a personal access token of yours.
 | `configure` says `UNLEASH_PAT` is empty | The `.env` edit was not saved |
 | The assistant shows no Unleash tools | It was not restarted after `configure`, or it was started outside the repo folder |
 | Tool calls fail with `401 Unauthorized` | You pasted the backend token into `UNLEASH_PAT`. The personal token starts with `user:`. Fix `.env`, run `./gradlew configure` again, restart the assistant |
+| The assistant lists other tools, or the tools differ from this workbook | The instance does not serve MCP v1. Run the local server pinned to 0.5.0, see [tooling/assistants/README.md](tooling/assistants/README.md#run-the-mcp-server-locally) |
 
 ### Build Embeddr Premium
 
